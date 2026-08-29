@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AgentLedger — Autonomous Double-Entry Ledger & Audit</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+            },
+            dark: {
+              900: '#090d16',
+              800: '#0f172a',
+              700: '#1e293b',
+              600: '#334155',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #090d16;
+      color: #f1f5f9;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 4px;
+    }
+    .pulse-dot {
+      animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+  </style>
+</head>
+<body class="min-h-screen font-sans antialiased text-slate-100 flex flex-col justify-between">
+
+  <!-- Navigation Bar -->
+  <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur-md sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center font-bold text-white shadow-lg shadow-indigo-500/20">
+          AL
+        </div>
+        <div>
+          <span class="text-lg font-bold bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">AgentLedger</span>
+          <span class="ml-2 text-xs px-2 py-0.5 rounded-full font-mono bg-indigo-950/80 border border-indigo-700/50 text-indigo-300">Zero-Trust Audit</span>
+        </div>
+      </div>
+
+      <div class="flex items-center space-x-4">
+        <div id="db-status-badge" class="flex items-center space-x-2 text-xs font-mono px-3 py-1.5 rounded-full bg-slate-800/80 border border-slate-700">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 pulse-dot"></span>
+          <span class="text-slate-300">PostgreSQL Ready</span>
+        </div>
+        <div class="text-xs font-mono text-slate-400 border-l border-slate-800 pl-4 hidden sm:block">
+          <span>Models: <strong class="text-indigo-300">Gemini 3.5 Flash & Pro</strong></span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Grid -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full flex-grow">
+    
+    <!-- Top Summary Metrics -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+      <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5 shadow-sm">
+        <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Total Assets</span>
+        <div id="stat-assets" class="text-2xl font-bold font-mono text-emerald-400 mt-1">$0.00</div>
+        <span class="text-xs text-slate-500 mt-1 block">Cash, AR, Inventory</span>
+      </div>
+
+      <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5 shadow-sm">
+        <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Total Liabilities & Equity</span>
+        <div id="stat-liabilities" class="text-2xl font-bold font-mono text-blue-400 mt-1">$0.00</div>
+        <span class="text-xs text-slate-500 mt-1 block">AP, Tax Payable, Capital</span>
+      </div>
+
+      <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5 shadow-sm">
+        <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Operating Expenses</span>
+        <div id="stat-expenses" class="text-2xl font-bold font-mono text-amber-400 mt-1">$0.00</div>
+        <span class="text-xs text-slate-500 mt-1 block">Cumulative debits</span>
+      </div>
+
+      <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5 shadow-sm">
+        <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Flagged Discrepancies</span>
+        <div id="stat-discrepancies" class="text-2xl font-bold font-mono text-rose-400 mt-1">0</div>
+        <span class="text-xs text-slate-500 mt-1 block">Human review pending</span>
+      </div>
+    </div>
+
+    <!-- Main Workspace: 2-Column Split -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      
+      <!-- Left Column: Input & Live Accounts (5 cols) -->
+      <div class="lg:col-span-5 space-y-6">
+        
+        <!-- Invoice Ingestion Card -->
+        <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-6 shadow-lg">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-base font-bold flex items-center space-x-2">
+              <span>📄</span>
+              <span>Invoice Intake & Parser</span>
+            </h2>
+            <span class="text-xs text-indigo-400 font-mono bg-indigo-950/60 px-2 py-0.5 rounded">gemini-3.5-flash</span>
+          </div>
+
+          <!-- Sample Quick Fill Buttons -->
+          <div class="mb-3 flex items-center space-x-2 overflow-x-auto pb-1 text-xs">
+            <span class="text-slate-500 font-mono">Demo:</span>
+            <button onclick="loadSample('valid')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium transition">
+              ✅ Balanced AWS
+            </button>
+            <button onclick="loadSample('unbalanced')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium transition">
+              ⚠️ Unbalanced
+            </button>
+            <button onclick="loadSample('lowconf')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium transition">
+              🔍 Low Conf (<85%)
+            </button>
+          </div>
+
+          <!-- Form Tabs -->
+          <div class="flex border-b border-slate-800 mb-3 text-xs">
+            <button id="tab-text" onclick="switchTab('text')" class="py-2 px-3 font-semibold border-b-2 border-indigo-500 text-indigo-400">
+              Raw Text / OCR
+            </button>
+            <button id="tab-json" onclick="switchTab('json')" class="py-2 px-3 font-semibold text-slate-400 hover:text-slate-200">
+              Strict JSON
+            </button>
+          </div>
+
+          <form id="invoice-form" onsubmit="submitInvoice(event)">
+            <textarea
+              id="invoice-input"
+              rows="9"
+              class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 font-mono text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition custom-scrollbar"
+              placeholder="Paste invoice text or structured JSON data here..."
+            ></textarea>
+
+            <button
+              id="submit-btn"
+              type="submit"
+              class="w-full mt-4 py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 font-semibold text-sm text-white shadow-lg shadow-indigo-600/30 flex items-center justify-center space-x-2 transition cursor-pointer"
+            >
+              <span>Audit & Post via ReAct Agent</span>
+              <span id="btn-spinner" class="hidden animate-spin">🔄</span>
+            </button>
+          </form>
+        </div>
+
+        <!-- Real-Time Chart of Accounts Table -->
+        <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-6 shadow-lg">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-base font-bold flex items-center space-x-2">
+              <span>📊</span>
+              <span>General Ledger Balances</span>
+            </h2>
+            <button onclick="fetchAccounts()" class="text-xs text-slate-400 hover:text-white flex items-center space-x-1">
+              <span>↻ Refresh</span>
+            </button>
+          </div>
+
+          <div class="overflow-x-auto custom-scrollbar max-h-72">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-950/60 text-slate-400 font-mono uppercase text-[10px] tracking-wider border-b border-slate-800">
+                <tr>
+                  <th class="py-2 px-3">Code</th>
+                  <th class="py-2 px-3">Account</th>
+                  <th class="py-2 px-3">Type</th>
+                  <th class="py-2 px-3 text-right">Balance</th>
+                </tr>
+              </thead>
+              <tbody id="accounts-table-body" class="divide-y divide-slate-800/60 font-mono">
+                <tr>
+                  <td colspan="4" class="py-4 text-center text-slate-500">Loading ledger accounts...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Right Column: Live Agent Execution Traces & HITL (7 cols) -->
+      <div class="lg:col-span-7 space-y-6">
+
+        <!-- Live Agent Execution Stream -->
+        <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-6 shadow-lg flex flex-col h-[520px]">
+          <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-3">
+            <div class="flex items-center space-x-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-indigo-500 pulse-dot"></span>
+              <h2 class="text-base font-bold">Live Agent ReAct Traces</h2>
+            </div>
+            <div class="flex items-center space-x-2">
+              <span id="stream-status" class="text-xs font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-400">Idle</span>
+              <button onclick="clearTrace()" class="text-xs text-slate-500 hover:text-slate-300">Clear</button>
+            </div>
+          </div>
+
+          <!-- Trace Console Stream Area -->
+          <div id="trace-container" class="flex-grow overflow-y-auto custom-scrollbar font-mono text-xs space-y-3 p-3 bg-slate-950 rounded-xl border border-slate-800/80">
+            <div class="text-slate-500 italic p-4 text-center">
+              Agent execution traces will stream live here upon invoice submission.<br>
+              (Gemini 3.5 Pro Thoughts, Tool Invocations, and MCP Observations)
+            </div>
+          </div>
+        </div>
+
+        <!-- Human-In-The-Loop Review Card -->
+        <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-6 shadow-lg">
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="text-base font-bold flex items-center space-x-2">
+              <span>🛡️</span>
+              <span>Human-in-the-Loop Review Queue</span>
+            </h2>
+            <button onclick="fetchDiscrepancies()" class="text-xs text-slate-400 hover:text-white">↻ Refresh</button>
+          </div>
+
+          <div id="discrepancies-list" class="space-y-3 max-h-64 overflow-y-auto custom-scrollbar">
+            <div class="text-xs text-slate-500 text-center py-4">No active discrepancies flagged. Zero-trust constraints verified.</div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Interactive HITL Approval Modal -->
+  <div id="hitl-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-lg w-full shadow-2xl">
+      <h3 class="text-base font-bold text-slate-100 mb-2 flex items-center space-x-2">
+        <span>⚖️</span>
+        <span>Human-in-the-Loop Override & Balance</span>
+      </h3>
+      <p id="modal-desc" class="text-xs text-slate-400 mb-4"></p>
+
+      <div class="space-y-3 text-xs font-mono">
+        <div>
+          <label class="text-slate-400 block mb-1">Invoice Reference</label>
+          <input id="modal-ref" type="text" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-slate-200">
+        </div>
+        <div>
+          <label class="text-slate-400 block mb-1">Corrected Transaction Amount ($)</label>
+          <input id="modal-amount" type="number" step="0.01" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-slate-200">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-slate-400 block mb-1">Debit Account (Asset/Expense)</label>
+            <select id="modal-debit-acc" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-slate-200"></select>
+          </div>
+          <div>
+            <label class="text-slate-400 block mb-1">Credit Account (AP/Cash)</label>
+            <select id="modal-credit-acc" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-slate-200"></select>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex justify-end space-x-3 mt-6">
+        <button onclick="closeModal()" class="px-4 py-2 text-xs font-medium text-slate-400 hover:text-slate-200">Cancel</button>
+        <button onclick="submitApproval()" class="px-4 py-2 text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 rounded-lg text-white">Approve & Post to Ledger</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="border-t border-slate-800/80 bg-slate-950/40 py-4 mt-8 text-center text-xs text-slate-500 font-mono">
+    AgentLedger · Built with TypeScript, Express, PostgreSQL, @google/genai & Model Context Protocol (MCP)
+  </footer>
+
+  <!-- Frontend Logic & SSE Streaming Client -->
+  <script>
+    let currentInputMode = 'text';
+    let currentDiscrepancyId = null;
+
+    const SAMPLES = {
+      valid: `TAX INVOICE
+Supplier: Amazon Web Services Cloud Infrastructure Inc
+VAT Registration ID: VAT-US-88771122
+Invoice No: INV-AWS-2026-9081
+Date: 2026-08-28
+Currency: USD
+
+Line Items:
+1. EC2 Compute Cloud Instances - $800.00
+2. Amazon S3 Scalable Cloud Storage - $200.00
+
+Subtotal: $1,000.00
+Tax (13% Sales Tax): $130.00
+Total Amount Due: $1,130.00`,
+
+      unbalanced: `TAX INVOICE
+Supplier: Erroneous Vendor Corp
+VAT Registration ID: VAT-US-44332211
+Invoice No: INV-ERR-8819
+Date: 2026-08-28
+Currency: USD
+
+Line Items:
+1. Consulting Services - $1,000.00
+
+Subtotal: $1,000.00
+Tax: $0.00
+Total Amount Due: $1,250.00`,
+
+      lowconf: `RECEIPT (BLURRY SCAN)
+Vendor: Corner Market Supply
+Tax ID: ???
+Invoice #: REC-0092
+Subtotal: 45.00
+Tax: 5.85
+Total: 50.85
+(Notes: Text partially smudged, low OCR confidence 0.65)`
+    };
+
+    function loadSample(type) {
+      document.getElementById('invoice-input').value = SAMPLES[type] || '';
+      switchTab('text');
+    }
+
+    function switchTab(mode) {
+      currentInputMode = mode;
+      const tabText = document.getElementById('tab-text');
+      const tabJson = document.getElementById('tab-json');
+      if (mode === 'text') {
+        tabText.className = 'py-2 px-3 font-semibold border-b-2 border-indigo-500 text-indigo-400';
+        tabJson.className = 'py-2 px-3 font-semibold text-slate-400 hover:text-slate-200';
+      } else {
+        tabJson.className = 'py-2 px-3 font-semibold border-b-2 border-indigo-500 text-indigo-400';
+        tabText.className = 'py-2 px-3 font-semibold text-slate-400 hover:text-slate-200';
+      }
+    }
+
+    function clearTrace() {
+      document.getElementById('trace-container').innerHTML = '<div class="text-slate-500 italic p-4 text-center">Ready for next invoice submission.</div>';
+    }
+
+    function appendTrace(html) {
+      const container = document.getElementById('trace-container');
+      if (container.innerHTML.includes('will stream live here') || container.innerHTML.includes('Ready for next')) {
+        container.innerHTML = '';
+      }
+      container.innerHTML += html;
+      container.scrollTop = container.scrollHeight;
+    }
+
+    // Submit invoice and consume SSE stream
+    async function submitInvoice(e) {
+      e.preventDefault();
+      const inputVal = document.getElementById('invoice-input').value.trim();
+      if (!inputVal) return;
+
+      const submitBtn = document.getElementById('submit-btn');
+      const spinner = document.getElementById('btn-spinner');
+      const streamStatus = document.getElementById('stream-status');
+
+      submitBtn.disabled = true;
+      spinner.classList.remove('hidden');
+      streamStatus.textContent = 'Processing...';
+      streamStatus.className = 'text-xs font-mono px-2 py-0.5 rounded bg-indigo-900/60 text-indigo-300';
+
+      clearTrace();
+
+      let payload = {};
+      if (currentInputMode === 'json') {
+        try {
+          payload.directJson = JSON.parse(inputVal);
+        } catch (err) {
+          alert('Invalid JSON input: ' + err.message);
+          submitBtn.disabled = false;
+          spinner.classList.add('hidden');
+          return;
+        }
+      } else {
+        payload.rawText = inputVal;
+      }
+
+      try {
+        const response = await fetch('/api/pipeline/stream', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder('utf-8');
+        let buffer = '';
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n\n');
+          buffer = lines.pop(); // keep remainder
+
+          for (const chunk of lines) {
+            if (!chunk.trim()) continue;
+            const eventMatch = chunk.match(/^event:\s*(.+)$/m);
+            const dataMatch = chunk.match(/^data:\s*(.+)$/m);
+
+            const eventType = eventMatch ? eventMatch[1] : 'message';
+            const data = dataMatch ? JSON.parse(dataMatch[1]) : {};
+
+            handleStreamEvent(eventType, data);
+          }
+        }
+      } catch (err) {
+        appendTrace(`<div class="p-3 rounded-lg bg-rose-950/60 border border-rose-800 text-rose-300">Stream Connection Error: ${err.message}</div>`);
+      } finally {
+        submitBtn.disabled = false;
+        spinner.classList.add('hidden');
+        streamStatus.textContent = 'Completed';
+        streamStatus.className = 'text-xs font-mono px-2 py-0.5 rounded bg-emerald-900/60 text-emerald-300';
+        fetchAccounts();
+        fetchDiscrepancies();
+      }
+    }
+
+    function handleStreamEvent(type, data) {
+      if (type === 'ingest_start') {
+        appendTrace(`
+          <div class="p-3 rounded-lg bg-slate-900 border border-slate-800 text-slate-300">
+            <span class="text-indigo-400 font-bold">▶ [Ingest Start]</span> ${data.message}
+          </div>
+        `);
+      } else if (type === 'ingest_complete') {
+        const confPercent = Math.round((data.data.confidenceScore || 0) * 100);
+        const confColor = confPercent >= 85 ? 'text-emerald-400' : 'text-rose-400';
+        appendTrace(`
+          <div class="p-3 rounded-lg bg-slate-900 border border-slate-800 space-y-1">
+            <div class="flex justify-between items-center">
+              <span class="text-indigo-400 font-bold">✔ [Ingest Complete]</span>
+              <span class="font-bold ${confColor}">Confidence: ${confPercent}%</span>
+            </div>
+            <div class="text-slate-300">Vendor: <strong>${data.data.vendor}</strong> | Ref: <strong>${data.data.invoiceNumber}</strong></div>
+            <div class="text-slate-400 text-[11px]">Subtotal: $${data.data.subtotal} | Tax: $${data.data.taxAmount} | Total: $${data.data.totalAmount}</div>
+          </div>
+        `);
+      } else if (type === 'react_start') {
+        appendTrace(`
+          <div class="p-3 rounded-lg bg-indigo-950/40 border border-indigo-800/60 text-indigo-200">
+            <span class="text-indigo-400 font-bold">🧠 [ReAct Loop]</span> ${data.message}
+          </div>
+        `);
+      } else if (type === 'react_step') {
+        let actionHtml = '';
+        if (data.action) {
+          actionHtml = `
+            <div class="mt-2 p-2 rounded bg-slate-950 border border-slate-800/80 text-[11px]">
+              <span class="text-amber-400 font-bold">⚙ Tool Call:</span> <span class="text-purple-300">${data.action.tool}</span>
+              <pre class="text-slate-400 mt-1 overflow-x-auto">${JSON.stringify(data.action.args, null, 2)}</pre>
+            </div>
+          `;
+        }
+
+        let obsHtml = '';
+        if (data.observation) {
+          obsHtml = `
+            <div class="mt-1 p-2 rounded bg-slate-950/80 border border-slate-800/60 text-[11px]">
+              <span class="text-emerald-400 font-bold">👁 Observation:</span>
+              <pre class="text-slate-400 mt-1 overflow-x-auto">${JSON.stringify(data.observation, null, 2)}</pre>
+            </div>
+          `;
+        }
+
+        appendTrace(`
+          <div class="p-3 rounded-lg bg-slate-900 border border-slate-800 space-y-1">
+            <div class="text-indigo-300 font-bold text-[11px]">Step ${data.step}</div>
+            <div class="text-slate-200 italic">${data.thought || ''}</div>
+            ${actionHtml}
+            ${obsHtml}
+          </div>
+        `);
+      } else if (type === 'audit_complete') {
+        const isPosted = data.orchestration.status === 'POSTED';
+        const isFlagged = data.orchestration.status === 'FLAGGED_FOR_REVIEW';
+        const badgeColor = isPosted ? 'bg-emerald-950 border-emerald-700 text-emerald-300' : isFlagged ? 'bg-amber-950 border-amber-700 text-amber-300' : 'bg-rose-950 border-rose-700 text-rose-300';
+
+        appendTrace(`
+          <div class="p-4 rounded-xl border ${badgeColor} space-y-2 mt-2">
+            <div class="flex justify-between items-center font-bold text-sm">
+              <span>FINAL RECONCILIATION RESULT</span>
+              <span class="px-2 py-0.5 rounded text-xs">${data.orchestration.status}</span>
+            </div>
+            <div class="text-xs">${data.orchestration.auditSummary}</div>
+          </div>
+        `);
+      }
+    }
+
+    // Fetch accounts and update metrics
+    async function fetchAccounts() {
+      try {
+        const res = await fetch('/api/ledger/accounts');
+        const data = await res.json();
+        const accounts = data.accounts || [];
+
+        let totalAssets = 0;
+        let totalLiabilities = 0;
+        let totalExpenses = 0;
+
+        const tbody = document.getElementById('accounts-table-body');
+        tbody.innerHTML = '';
+
+        accounts.forEach(acc => {
+          const bal = Number(acc.balance) || 0;
+          if (acc.type === 'ASSET') totalAssets += bal;
+          if (['LIABILITY', 'EQUITY'].includes(acc.type)) totalLiabilities += bal;
+          if (acc.type === 'EXPENSE') totalExpenses += bal;
+
+          const tr = document.createElement('tr');
+          tr.className = 'hover:bg-slate-800/40 transition';
+          tr.innerHTML = `
+            <td class="py-2.5 px-3 text-slate-400">${acc.code}</td>
+            <td class="py-2.5 px-3 font-medium text-slate-200">${acc.name}</td>
+            <td class="py-2.5 px-3 text-slate-400">
+              <span class="px-1.5 py-0.5 rounded text-[10px] bg-slate-800 text-slate-300">${acc.type}</span>
+            </td>
+            <td class="py-2.5 px-3 text-right font-bold ${bal >= 0 ? 'text-slate-200' : 'text-rose-400'}">
+              $${bal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+
+        document.getElementById('stat-assets').textContent = `$${totalAssets.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+        document.getElementById('stat-liabilities').textContent = `$${totalLiabilities.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+        document.getElementById('stat-expenses').textContent = `$${totalExpenses.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+      } catch (err) {
+        console.error('Failed to fetch accounts:', err);
+      }
+    }
+
+    // Fetch discrepancies
+    async function fetchDiscrepancies() {
+      try {
+        const res = await fetch('/api/discrepancies');
+        const data = await res.json();
+        const list = data.discrepancies || [];
+
+        const pending = list.filter(d => d.status === 'FLAGGED');
+        document.getElementById('stat-discrepancies').textContent = pending.length;
+
+        const container = document.getElementById('discrepancies-list');
+        if (list.length === 0) {
+          container.innerHTML = '<div class="text-xs text-slate-500 text-center py-4">No active discrepancies. Zero-trust ledger fully balanced.</div>';
+          return;
+        }
+
+        container.innerHTML = '';
+        list.forEach(disc => {
+          const isPending = disc.status === 'FLAGGED';
+          const card = document.createElement('div');
+          card.className = `p-3 rounded-xl border text-xs ${isPending ? 'bg-amber-950/30 border-amber-800/60' : 'bg-slate-900/50 border-slate-800'}`;
+          card.innerHTML = `
+            <div class="flex justify-between items-start mb-1">
+              <span class="font-bold ${isPending ? 'text-amber-300' : 'text-slate-400'}">⚠️ ${disc.id}</span>
+              <span class="px-1.5 py-0.5 rounded text-[10px] font-mono ${isPending ? 'bg-amber-900 text-amber-200' : 'bg-slate-800 text-slate-400'}">${disc.status}</span>
+            </div>
+            <p class="text-slate-300 mb-1.5">${disc.reason}</p>
+            <div class="text-[11px] text-slate-400 flex justify-between items-center pt-2 border-t border-slate-800/60">
+              <span>Variance: <strong class="text-rose-300">$${(disc.varianceAmount || 0).toFixed(2)}</strong></span>
+              ${isPending ? `
+                <div class="space-x-2">
+                  <button onclick="openModal('${disc.id}', '${escape(disc.reason)}', ${disc.varianceAmount})" class="px-2.5 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-medium">
+                    Review & Post
+                  </button>
+                  <button onclick="rejectDiscrepancy('${disc.id}')" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-400">
+                    Dismiss
+                  </button>
+                </div>
+              ` : ''}
+            </div>
+          `;
+          container.appendChild(card);
+        });
+      } catch (err) {
+        console.error('Failed to fetch discrepancies:', err);
+      }
+    }
+
+    // Modal controls for HITL
+    async function openModal(id, reason, variance) {
+      currentDiscrepancyId = id;
+      document.getElementById('modal-desc').textContent = unescape(reason);
+      document.getElementById('modal-ref').value = `RECON-${id.slice(0, 8)}`;
+      document.getElementById('modal-amount').value = variance > 0 ? variance : 1000.0;
+
+      // Populate accounts dropdowns
+      const res = await fetch('/api/ledger/accounts');
+      const data = await res.json();
+      const accounts = data.accounts || [];
+
+      const debitSelect = document.getElementById('modal-debit-acc');
+      const creditSelect = document.getElementById('modal-credit-acc');
+      debitSelect.innerHTML = '';
+      creditSelect.innerHTML = '';
+
+      accounts.forEach(acc => {
+        debitSelect.innerHTML += `<option value="${acc.id}" ${acc.id === 'acc_expense' ? 'selected' : ''}>${acc.code} - ${acc.name} (${acc.type})</option>`;
+        creditSelect.innerHTML += `<option value="${acc.id}" ${acc.id === 'acc_ap' ? 'selected' : ''}>${acc.code} - ${acc.name} (${acc.type})</option>`;
+      });
+
+      document.getElementById('hitl-modal').classList.remove('hidden');
+    }
+
+    function closeModal() {
+      document.getElementById('hitl-modal').classList.add('hidden');
+      currentDiscrepancyId = null;
+    }
+
+    async function submitApproval() {
+      if (!currentDiscrepancyId) return;
+      const ref = document.getElementById('modal-ref').value;
+      const amount = parseFloat(document.getElementById('modal-amount').value);
+      const debitAccountId = document.getElementById('modal-debit-acc').value;
+      const creditAccountId = document.getElementById('modal-credit-acc').value;
+
+      try {
+        const res = await fetch(`/api/discrepancies/${currentDiscrepancyId}/approve`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            reference: ref,
+            amount,
+            debitAccountId,
+            creditAccountId,
+          })
+        });
+
+        const data = await res.json();
+        closeModal();
+        fetchAccounts();
+        fetchDiscrepancies();
+        appendTrace(`
+          <div class="p-3 rounded-lg bg-emerald-950/60 border border-emerald-800 text-emerald-300 text-xs">
+            ✔ Human Review Approved: Balanced entry posted for discrepancy <strong>${currentDiscrepancyId}</strong>.
+          </div>
+        `);
+      } catch (err) {
+        alert('Approval failed: ' + err.message);
+      }
+    }
+
+    async function rejectDiscrepancy(id) {
+      if (!confirm('Dismiss this discrepancy?')) return;
+      try {
+        await fetch(`/api/discrepancies/${id}/reject`, { method: 'POST' });
+        fetchDiscrepancies();
+      } catch (err) {
+        alert('Failed to dismiss: ' + err.message);
+      }
+    }
+
+    // Initial Load
+    fetchAccounts();
+    fetchDiscrepancies();
+    loadSample('valid');
+  </script>
+</body>
+</html>
