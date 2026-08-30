@@ -6,8 +6,8 @@ Use this ready-to-paste guide when filling out your submission on Devpost for th
 
 ## 📌 Project Overview
 
-* **Project Title**: **AgentLedger — Zero-Trust Double-Entry Accounting & Ledger Fleet**
-* **Tagline / Elevator Pitch**: An enterprise-grade, zero-trust AI agent fleet powered by Gemini 3.5 Pro, Flash, and Gemma 2 that audits invoices, sanitizes PII, mathematically enforces double-entry balance constraints, and streams real-time reconciliations to Google Cloud SQL.
+* **Project Title** (<=60 chars): **AgentLedger: Zero-Trust Accounting & Ledger Fleet**
+* **Tagline / Elevator Pitch** (<=200 chars): Zero-trust AI accounting fleet powered by Gemini 3.5 & Gemma 2. Sanitizes PII, mathematically enforces double-entry balance rules, and streams reconciliations to Cloud SQL.
 * **Category / Track**: **The Fortified Enterprise Fleet**
 
 ---
