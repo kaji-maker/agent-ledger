@@ -6,6 +6,9 @@
 
 set -euo pipefail
 
+# Ensure gcloud CLI is in PATH
+export PATH="$HOME/google-cloud-sdk/bin:$PATH"
+
 # Load local .env if available
 if [[ -f .env ]]; then
   # export non-commented lines from .env
