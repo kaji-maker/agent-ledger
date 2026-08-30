@@ -2,8 +2,8 @@
 
 1. **Stack**: Node.js v20+, TypeScript, `@google/genai`, `@modelcontextprotocol/sdk`, PostgreSQL (`pg`), Express.
 2. **Models**:
-   - Extraction: `gemini-2.5-flash` (multimodal invoice/receipt parsing to structured JSON).
-   - Reasoning & Reconciliation: `gemini-2.5-pro` (context audit & MCP tool calling).
+   - Extraction: `gemini-3.5-flash` (multimodal invoice/receipt parsing to structured JSON).
+   - Reasoning & Reconciliation: `gemini-3.5-pro` (context audit & MCP tool calling).
 3. **Safety & Zero-Trust Constraints**:
    - Enforce double-entry accounting rule at tool level: `abs(sum(debits) - sum(credits)) < 0.001`.
    - Never commit an unbalanced transaction to PostgreSQL.

@@ -34,7 +34,7 @@ async function main() {
   app.listen(port, () => {
     console.log(`AgentLedger API service is listening on port ${port}`);
     console.log(`- Health Check: http://localhost:${port}/api/health`);
-    console.log(`- MCP Tools ready for Gemini 2.5 Pro reconciliation`);
+    console.log(`- MCP Tools ready for Gemini 3.5 Pro reconciliation`);
   });
 }
 

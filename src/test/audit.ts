@@ -23,7 +23,7 @@ async function runAuditSuite(): Promise<void> {
   const results: TestResult[] = [];
 
   // -------------------------------------------------------------
-  // Test 1: MCP & Gemini 2.5 Pro Tool Declarations
+  // Test 1: MCP & Gemini 3.5 Pro Tool Declarations
   // -------------------------------------------------------------
   try {
     const requiredTools = [
@@ -216,13 +216,13 @@ async function runAuditSuite(): Promise<void> {
     const recon = await orchestrator.processInvoice(invoice);
     const passed = recon.status === 'POSTED' && recon.balanceVerified === true;
     results.push({
-      name: 'Autonomous ReAct Audit Loop (Gemini 2.5 Pro)',
+      name: 'Autonomous ReAct Audit Loop (Gemini 3.5 Pro)',
       passed,
       details: `Audit status: ${recon.status}, Executed ${recon.reactSteps.length} ReAct steps`,
     });
   } catch (err: any) {
     results.push({
-      name: 'Autonomous ReAct Audit Loop (Gemini 2.5 Pro)',
+      name: 'Autonomous ReAct Audit Loop (Gemini 3.5 Pro)',
       passed: false,
       details: err.message,
     });
