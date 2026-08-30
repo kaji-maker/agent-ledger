@@ -94,7 +94,7 @@ flowchart TD
 
 ### 1. Clone & Install Dependencies
 ```bash
-git clone https://github.com/your-username/agent-ledger.git
+git clone https://github.com/kaji-maker/agent-ledger.git
 cd agent-ledger
 npm install
 ```
