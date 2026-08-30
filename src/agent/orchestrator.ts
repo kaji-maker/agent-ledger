@@ -47,7 +47,7 @@ export type StepCallback = (step: ReActStep) => void;
 // ==========================================
 
 const ORCHESTRATOR_SYSTEM_INSTRUCTION = `
-You are the Senior Ledger Reconciliation & Audit Orchestrator for AgentLedger, powered by Gemini 3.5 Pro.
+You are the Senior Ledger Reconciliation & Audit Orchestrator for AgentLedger, powered by Gemini 2.5 Pro.
 Your task is to operate in a strict ReAct (Reason + Act) loop to audit extracted invoice data and post double-entry journal entries.
 
 Strict Zero-Trust & Accounting Rules:
@@ -71,7 +71,7 @@ Strict Zero-Trust & Accounting Rules:
 export class LedgerOrchestrator {
   private ai: GoogleGenAI;
   private piiSanitizer: PiiSanitizer;
-  public readonly model = 'gemini-3.5-pro';
+  public readonly model = 'gemini-2.5-pro';
   private maxIterations = 6;
 
   constructor(apiKey?: string) {
@@ -83,7 +83,7 @@ export class LedgerOrchestrator {
   /**
    * Execute full ReAct loop on extracted invoice data with real-time step streaming.
    * Step 1: Sanitizes sensitive PII (Bank numbers, employee identities, SSNs) via Gemma 2 2B IT.
-   * Step 2: Audits and posts balanced double-entry transaction via Gemini 3.5 Pro.
+   * Step 2: Audits and posts balanced double-entry transaction via Gemini 2.5 Pro.
    */
   async processInvoice(
     invoice: ExtractedInvoice,
@@ -107,7 +107,7 @@ export class LedgerOrchestrator {
 
     const hasApiKey = Boolean(process.env.GEMINI_API_KEY);
 
-    // If API key is available, run autonomous Gemini 3.5 Pro ReAct loop
+    // If API key is available, run autonomous Gemini 2.5 Pro ReAct loop
     if (hasApiKey) {
       try {
         return await this.runGeminiReActLoop(sanitizedInvoice, reactSteps, onStep);
@@ -123,7 +123,7 @@ export class LedgerOrchestrator {
   }
 
   /**
-   * Autonomous ReAct loop using Gemini 3.5 Pro function calling.
+   * Autonomous ReAct loop using Gemini 2.5 Pro function calling.
    */
   private async runGeminiReActLoop(
     invoice: ExtractedInvoice,

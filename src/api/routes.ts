@@ -24,7 +24,7 @@ apiRouter.get('/health', async (_req: Request, res: Response) => {
   });
 });
 
-// Ingest Endpoint (gemini-3.5-flash) - Parses base64 PDF/image or rawText into strict JSON
+// Ingest Endpoint (gemini-2.5-flash) - Parses base64 PDF/image or rawText into strict JSON
 apiRouter.post('/ingest', async (req: Request, res: Response) => {
   try {
     const { rawText, base64Data, mimeType, fileName } = req.body;
@@ -40,7 +40,7 @@ apiRouter.post('/ingest', async (req: Request, res: Response) => {
   }
 });
 
-// Orchestrate Endpoint (gemini-3.5-pro) - Runs ReAct loop with MCP tools
+// Orchestrate Endpoint (gemini-2.5-pro) - Runs ReAct loop with MCP tools
 apiRouter.post('/orchestrate', async (req: Request, res: Response) => {
   try {
     const invoice = req.body;

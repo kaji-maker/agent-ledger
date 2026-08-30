@@ -5,7 +5,7 @@
 [![Models](https://img.shields.io/badge/Models-Gemini_3.5_Pro_%7C_Gemini_3.5_Flash_%7C_Gemma_2_2B_IT-FF6F00?style=for-the-badge&logo=googlegemini)](https://ai.google.dev)
 [![Google Cloud](https://img.shields.io/badge/Google_Cloud-Cloud_Run_%7C_Cloud_SQL_%7C_Secret_Manager-34A853?style=for-the-badge&logo=googlecloud)](https://cloud.google.com)
 
-> **AgentLedger** is an enterprise-grade, zero-trust autonomous agent fleet that parses financial documents, sanitizes private employee/banking data with **Gemma 2 2B IT**, audits tax compliance, mathematically enforces double-entry balance constraints with **Gemini 3.5 Pro** via **Model Context Protocol (MCP)**, and commits verified transactions to **Google Cloud SQL (PostgreSQL)** in real time.
+> **AgentLedger** is an enterprise-grade, zero-trust autonomous agent fleet that parses financial documents, sanitizes private employee/banking data with **Gemma 2 2B IT**, audits tax compliance, mathematically enforces double-entry balance constraints with **Gemini 2.5 Pro** via **Model Context Protocol (MCP)**, and commits verified transactions to **Google Cloud SQL (PostgreSQL)** in real time.
 
 ---
 
@@ -13,8 +13,8 @@
 
 * **Track**: **The Fortified Enterprise Fleet** *(Zero-trust network of agents with security, privacy governance, mathematical guardrails, and MCP multi-agent tool calling).*
 * **Google Models Used**:
-  * ⚡ **`gemini-3.5-flash`**: High-speed multimodal invoice and receipt parsing into strict financial JSON schemas.
-  * 🧠 **`gemini-3.5-pro`**: Multi-turn ReAct reasoning loop, account mapping, tax compliance auditing, and MCP tool execution.
+  * ⚡ **`gemini-2.5-flash`**: High-speed multimodal invoice and receipt parsing into strict financial JSON schemas.
+  * 🧠 **`gemini-2.5-pro`**: Multi-turn ReAct reasoning loop, account mapping, tax compliance auditing, and MCP tool execution.
   * 🛡️ **`gemma-2-2b-it`**: Privacy shield redacting sensitive bank accounts, SSNs, and employee identities into privacy tokens before reasoning.
 * **Google Agent Frameworks**: `@google/genai` (Google Gen AI SDK for TypeScript), `@modelcontextprotocol/sdk` (Model Context Protocol).
 * **Google Cloud Services**: **Cloud Run**, **Cloud SQL (PostgreSQL)**, **Secret Manager**, **Artifact Registry**, **Cloud Build**.
@@ -31,12 +31,12 @@ flowchart TD
     end
 
     subgraph Ingestion ["Ingestion & Privacy Shield"]
-        F1["⚡ Ingest Parser (gemini-3.5-flash)"]
+        F1["⚡ Ingest Parser (gemini-2.5-flash)"]
         G1["🛡️ Privacy & PII Sanitizer (gemma-2-2b-it)\n[REDACTED_ACCOUNT], [REDACTED_SSN]"]
     end
 
     subgraph Reasoning ["Zero-Trust ReAct Orchestrator"]
-        O1["🧠 Senior Audit ReAct Loop (gemini-3.5-pro)"]
+        O1["🧠 Senior Audit ReAct Loop (gemini-2.5-pro)"]
         Z1{"⚖️ Zero-Trust Rule Check\nabs(sum(debits) - sum(credits)) < 0.001\nConfidence >= 0.85\nTax Compliant = True"}
     end
 
@@ -79,7 +79,7 @@ flowchart TD
 * Coordinates chart-of-accounts discovery (`fetchLedgerAccounts`), vendor tax verification (`verifyTaxCompliance`), and atomic transaction posting (`postJournalEntry`) via standard Model Context Protocol declarations.
 
 ### 4. ⚡ Live Server-Sent Events (SSE) Trace Stream
-* Streams Gemini 3.5 Pro **Thoughts**, **MCP Tool Invocations**, **Tool Observations**, and **Balance Updates** in real-time to the dark-mode dashboard.
+* Streams Gemini 2.5 Pro **Thoughts**, **MCP Tool Invocations**, **Tool Observations**, and **Balance Updates** in real-time to the dark-mode dashboard.
 
 ### 5. ⚖️ Interactive Human-in-the-Loop (HITL) Queue
 * Flagged transactions appear in the review queue with variance calculations and an **"Approve & Post"** override modal.
@@ -161,7 +161,7 @@ export INSTANCE_CONNECTION_NAME="your-gcp-project:us-central1:your-postgres-db"
 | **Double-Entry Balance** | `postJournalEntry` | Strict `sum(debits) === sum(credits)` | ✅ PASS |
 | **Zero-Trust Block** | `postJournalEntry` | Blocks unbalanced entry ($200 variance) from PostgreSQL | ✅ PASS |
 | **Discrepancy Logging**| `flagDiscrepancyForReview`| Persistent discrepancy queue with resolution workflow | ✅ PASS |
-| **ReAct Loop** | `src/agent/orchestrator.ts`| Autonomous multi-turn reasoning with Gemini 3.5 Pro | ✅ PASS |
+| **ReAct Loop** | `src/agent/orchestrator.ts`| Autonomous multi-turn reasoning with Gemini 2.5 Pro | ✅ PASS |
 | **Safety Threshold** | `src/agent/orchestrator.ts`| Low confidence (`< 0.85`) triggers human audit gate | ✅ PASS |
 | **PII Privacy Shield**| `src/agent/piiSanitizer.ts` | Gemma 2 2B IT tokenizes bank/SSN/employee data | ✅ PASS |
 
@@ -177,9 +177,9 @@ agent-ledger/
 │   └── index.html                # Real-time SPA dashboard with live SSE trace viewer
 ├── src/
 │   ├── agent/
-│   │   ├── ingest.ts             # Gemini 3.5 Flash invoice parser with strict schema
+│   │   ├── ingest.ts             # Gemini 2.5 Flash invoice parser with strict schema
 │   │   ├── piiSanitizer.ts       # Gemma 2 2B IT privacy & PII redaction shield
-│   │   ├── orchestrator.ts       # Gemini 3.5 Pro ReAct loop & MCP coordinator
+│   │   ├── orchestrator.ts       # Gemini 2.5 Pro ReAct loop & MCP coordinator
 │   │   └── prompts.ts            # Enterprise prompt templates
 │   ├── mcp/
 │   │   ├── ledgerTools.ts        # 4 Core MCP ledger tools with @google/genai Type enums

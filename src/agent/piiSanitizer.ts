@@ -37,7 +37,7 @@ export class PiiSanitizer {
   }
 
   /**
-   * Sanitize an ExtractedInvoice structure before passing to Gemini 3.5 Pro.
+   * Sanitize an ExtractedInvoice structure before passing to Gemini 2.5 Pro.
    */
   async sanitize(invoice: ExtractedInvoice): Promise<SanitizationResult> {
     const redactionsSummary: string[] = [];

@@ -138,7 +138,7 @@ export const invoiceResponseSchema: Schema = {
 };
 
 const INGEST_SYSTEM_INSTRUCTION = `
-You are the AgentLedger Intelligent Ingest Parser powered by Gemini 3.5 Flash.
+You are the AgentLedger Intelligent Ingest Parser powered by Gemini 2.5 Flash.
 Your objective is to accurately extract financial invoice and receipt details from base64 document images, PDFs, or raw text into a strict JSON format.
 
 Extraction Guidelines:
@@ -157,7 +157,7 @@ Extraction Guidelines:
 
 export class IngestAgent {
   private ai: GoogleGenAI;
-  public readonly model = 'gemini-3.5-flash';
+  public readonly model = 'gemini-2.5-flash';
 
   constructor(apiKey?: string) {
     this.ai = new GoogleGenAI({ apiKey: apiKey || process.env.GEMINI_API_KEY || '' });

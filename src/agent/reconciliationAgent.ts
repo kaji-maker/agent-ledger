@@ -22,7 +22,7 @@ export interface ReconciliationResult {
 
 export class ReconciliationAgent {
   private ai: GoogleGenAI;
-  private modelName = 'gemini-3.5-pro';
+  private modelName = 'gemini-2.5-pro';
 
   constructor(apiKey?: string) {
     this.ai = new GoogleGenAI({ apiKey: apiKey || process.env.GEMINI_API_KEY || '' });

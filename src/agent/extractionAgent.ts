@@ -21,7 +21,7 @@ export interface ExtractedInvoiceData {
 
 export class ExtractionAgent {
   private ai: GoogleGenAI;
-  private modelName = 'gemini-3.5-flash';
+  private modelName = 'gemini-2.5-flash';
 
   constructor(apiKey?: string) {
     this.ai = new GoogleGenAI({ apiKey: apiKey || process.env.GEMINI_API_KEY || '' });

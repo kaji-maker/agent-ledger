@@ -50,11 +50,11 @@ async function runLiveDemo() {
   Payment: Wire to Routing: 021000021, Account: 9988776655. Signer: Alice Johnson
   `;
 
-  console.log('1️⃣ Ingesting invoice via Gemini 3.5 Flash...');
+  console.log('1️⃣ Ingesting invoice via Gemini 2.5 Flash...');
   const ingest1 = await ingestAgent.ingestInvoice({ rawText: invoice1Raw });
   console.log(`   └─ Extracted: ${ingest1.data.vendor} | Ref: ${ingest1.data.invoiceNumber} | Total: $${ingest1.data.totalAmount}`);
 
-  console.log('2️⃣ Running ReAct Audit with Gemma 2 2B IT Shield & Gemini 3.5 Pro...');
+  console.log('2️⃣ Running ReAct Audit with Gemma 2 2B IT Shield & Gemini 2.5 Pro...');
   const recon1 = await orchestrator.processInvoice(ingest1.data, (step) => {
     if (step.thought) console.log(`   [Thought]: ${step.thought}`);
     if (step.action) console.log(`   [Tool Call -> MCP]: ${step.action.tool}(${JSON.stringify(step.action.args)})`);

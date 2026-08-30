@@ -134,7 +134,7 @@ app.post('/api/pipeline/stream', async (req: Request, res: Response) => {
       });
     } else {
       sendEvent('ingest_start', {
-        message: 'Parsing document with Gemini 3.5 Flash into strict accounting schema...',
+        message: 'Parsing document with Gemini 2.5 Flash into strict accounting schema...',
       });
 
       const ingestRes = await ingestAgent.ingestInvoice({
@@ -156,7 +156,7 @@ app.post('/api/pipeline/stream', async (req: Request, res: Response) => {
 
     // Step 2: Stream ReAct Reasoning & Tool Calls
     sendEvent('react_start', {
-      message: 'Launching Gemini 3.5 Pro ReAct Audit loop with MCP tools...',
+      message: 'Launching Gemini 2.5 Pro ReAct Audit loop with MCP tools...',
       invoiceNumber: extractedData.invoiceNumber,
       vendor: extractedData.vendor,
     });
